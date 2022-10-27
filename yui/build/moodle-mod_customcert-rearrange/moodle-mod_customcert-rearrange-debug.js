@@ -27,39 +27,9 @@ Y.extend(Rearrange, Y.Base, {
     elements: [],
 
     /**
-     * Store the X coordinates of the top left of the pdf div.
-     */
-    pdfx: 0,
-
-    /**
-     * Store the Y coordinates of the top left of the pdf div.
-     */
-    pdfy: 0,
-
-    /**
-     * Store the width of the pdf div.
-     */
-    pdfwidth: 0,
-
-    /**
-     * Store the height of the pdf div.
-     */
-    pdfheight: 0,
-
-    /**
      * Store the location of the element before we move.
      */
     elementxy: 0,
-
-    /**
-     * Store the left boundary of the pdf div.
-     */
-    pdfleftboundary: 0,
-
-    /**
-     * Store the right boundary of the pdf div.
-     */
-    pdfrightboundary: 0,
 
     /**
      * The number of pixels in a mm.
@@ -79,12 +49,6 @@ Y.extend(Rearrange, Y.Base, {
         // Set the elements.
         this.elements = params[2];
 
-        // Set the PDF dimensions.
-        this.setPdfDimensions();
-
-        // Set the boundaries.
-        this.setBoundaries();
-
         this.setpositions();
         this.createevents();
         window.addEventListener("resize", this.checkWindownResize.bind(this));
@@ -97,8 +61,8 @@ Y.extend(Rearrange, Y.Base, {
         // Go through the elements and set their positions.
         for (var key in this.elements) {
             var element = this.elements[key];
-            var posx = this.pdfx + element.posx * this.pixelsinmm;
-            var posy = this.pdfy + element.posy * this.pixelsinmm;
+            var posx = this.getPdfX() + element.posx * this.pixelsinmm;
+            var posy = this.getPdfY() + element.posy * this.pixelsinmm;
             var nodewidth = parseFloat(Y.one('#element-' + element.id).getComputedStyle('width'));
             var maxwidth = element.width * this.pixelsinmm;
 
@@ -120,37 +84,44 @@ Y.extend(Rearrange, Y.Base, {
         }
     },
 
-    /**
-     * Sets the PDF dimensions.
-     */
-    setPdfDimensions: function() {
-        this.pdfx = Y.one('#pdf').getX();
-        this.pdfy = Y.one('#pdf').getY();
-        this.pdfwidth = parseFloat(Y.one('#pdf').getComputedStyle('width'));
-        this.pdfheight = parseFloat(Y.one('#pdf').getComputedStyle('height'));
+    getPdfX: function() {
+        return Y.one('#pdf').getX();
     },
 
-    /**
-     * Sets the boundaries.
-     */
-    setBoundaries: function() {
-        this.pdfleftboundary = this.pdfx;
+    getPdfY: function() {
+        return Y.one('#pdf').getY();
+    },
+
+    getPdfWidth: function() {
+        return parseFloat(Y.one('#pdf').getComputedStyle('width'));
+    },
+
+    getPdfHeight: function() {
+        return parseFloat(Y.one('#pdf').getComputedStyle('height'));
+    },
+
+    getPdfLeftBoundary: function() {
+        var pdfleftboundary = this.getPdfX();
         if (this.page.leftmargin) {
-            this.pdfleftboundary += parseInt(this.page.leftmargin * this.pixelsinmm, 10);
+            pdfleftboundary += parseInt(this.page.leftmargin * this.pixelsinmm, 10);
         }
 
-        this.pdfrightboundary = this.pdfx + this.pdfwidth;
+        return pdfleftboundary;
+    },
+
+    getPdfRightBoundary: function() {
+        var pdfrightboundary = this.getPdfX() + this.getPdfWidth();
         if (this.page.rightmargin) {
-            this.pdfrightboundary -= parseInt(this.page.rightmargin * this.pixelsinmm, 10);
+            pdfrightboundary -= parseInt(this.page.rightmargin * this.pixelsinmm, 10);
         }
+
+        return pdfrightboundary;
     },
 
     /**
      * Check browser resize and reset position.
      */
     checkWindownResize: function() {
-        this.setPdfDimensions();
-        this.setBoundaries();
         this.setpositions();
     },
 
@@ -209,12 +180,12 @@ Y.extend(Rearrange, Y.Base, {
         var bottom = top + nodeheight;
 
         // Check if it is out of bounds horizontally.
-        if ((left < this.pdfleftboundary) || (right > this.pdfrightboundary)) {
+        if ((left < this.getPdfLeftBoundary()) || (right > this.getPdfRightBoundary())) {
             return true;
         }
 
         // Check if it is out of bounds vertically.
-        if ((top < this.pdfy) || (bottom > (this.pdfy + this.pdfheight))) {
+        if ((top < this.getPdfY()) || (bottom > (this.getPdfY() + this.getPdfHeight()))) {
             return true;
         }
 
@@ -239,8 +210,8 @@ Y.extend(Rearrange, Y.Base, {
             var node = Y.one('#element-' + element.id);
 
             // Get the current X and Y positions and refpoint for this element.
-            var posx = node.getX() - this.pdfx;
-            var posy = node.getY() - this.pdfy;
+            var posx = node.getX() - this.getPdfX();
+            var posy = node.getY() - this.getPdfY();
             var refpoint = node.getData('refpoint');
 
             var nodewidth = parseFloat(node.getComputedStyle('width'));
